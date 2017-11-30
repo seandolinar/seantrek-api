@@ -6,9 +6,9 @@ from flask_cors import CORS
 import datetime
 
 
-
-
 app = Flask(__name__)
+# app.run(threaded=True)
+
 # app.json_encoder = CustomJSONEncoder
 
 app.config.from_pyfile('config.py')
@@ -19,33 +19,19 @@ db = SQLAlchemy(app)
 
 results = db.engine.execute("select * from trip_main;")
 
-# for rec in results:
-#     print rec.__dict__
-
-class TripMain(db.Model):
-    date_start = db.Column(db.String(20), primary_key=True)
-    date_end = db.Column(db.String(20))
-    trip_id = db.Column(db.Integer, unique=True)
-    trip_label = db.Column(db.String(200))
-    trip_desc = db.Column(db.String(1000))
-
-    # photo_id = db.Column(db.Integer, db.ForeginKey('TripPhotos.photo_id'))
-    # photo_name = db.relationship('TripPhotos',backref=db.backref('trip_main', lazy=True))
-
-
-
-class TripPhotos(db.Model):
-    photo_id = db.Column(db.Integer, primary_key=True)
-    trip_id = db.Column(db.Integer)
-    photo_name = db.Column(db.String)
-
-
-def getTrips():
+def getTrips(state_id = 0):
     
     dataTrips = []
 
+    sql_state = 'SELECT a.* \
+        FROM trip_main a \
+        LEFT JOIN trip_state b \
+        ON (a.trip_id = b.trip_id) \
+        WHERE b.state_id IN (' + str(state_id) + ') \
+        GROUP BY a.date_start, b.trip_id'
+
     trips = dbConn()
-    trips.sqlString = 'select * from trip_main;'
+    trips.sqlString = sql_state if state_id != 0 else 'select * from trip_main order by date_start;'
     trips = trips.getQuery()
     
     photos = dbConn()
@@ -71,8 +57,47 @@ def getTrips():
 
     return dataTrips
 
-results = db.engine.execute("select * from trip_main;")
+def getOneTrip(name):
 
+    id = 0
+
+    for trip in static_trips:
+        if trip['trip_label'].lower().replace(' ', '-') == name:
+            id = trip['trip_id']
+
+    trip = dbConn()
+    trip.sqlString = 'select * from trip_main where trip_id=' + str(id) + ' order by date_start limit 1;'
+    trip = trip.getQuery()
+
+    states = dbConn()
+    states.sqlString = ('select b.abbreviation, b.name, b.id from trip_state a' +
+        ' left join ref_state b on (a.state_id=b.id)' + 
+        'where trip_id=' + str(id))
+    states = states.getQuery()
+
+    if len(trip) > 0:
+        trip[0]['states'] = states
+
+    presidents = dbConn()
+    presidents.sqlString = ('select * from trip_presidents a' +
+        ' left join ref_presidents b on (a.president_id=b.president_id)' + 
+        'where trip_id=' + str(id))
+    presidents = presidents.getQuery()
+
+    if len(trip) > 0:
+        trip[0]['presidents'] = presidents
+
+
+    return trip
+
+def getState(stateCode):
+    state_id = 0
+
+    for state in static_states:
+       if state['abbreviation'].lower() == stateCode.lower():
+            state_id = state['id'] 
+
+    return getTrips(state_id)
 
 class dbConn(object):
     sqlString = ''
@@ -95,10 +120,16 @@ class dbConn(object):
 
         return arrOut
 
+def staticStates():
 
-a = dbConn()
-a.sqlString="select * from trip_main;"
-a.getQuery()
+    states = dbConn()
+    states.sqlString = ('select b.abbreviation, b.name, b.id from ref_state b')
+    states = states.getQuery()
+
+    return states
+
+static_trips = getTrips()
+static_states = staticStates()
 
 
 
@@ -106,5 +137,13 @@ a.getQuery()
 def get_tasks():
     return jsonify(getTrips())
 
+@app.route('/api/tripone/<string:name>', methods=['GET'])
+def get_trip(name):
+    return jsonify(getOneTrip(name))
+
+@app.route('/api/state/<string:state>', methods=['GET'])
+def get_state(state):
+    return jsonify(getState(state))
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, threaded=True)

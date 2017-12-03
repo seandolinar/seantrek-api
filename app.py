@@ -99,6 +99,15 @@ def getState(stateCode):
 
     return getTrips(state_id)
 
+
+def getPresident(number):
+    presidents = dbConn()
+    presidents.sqlString = ('select * from ref_presidents ' + 
+        'where number=' + str(number))
+    presidents = presidents.getQuery()
+
+    return presidents
+
 class dbConn(object):
     sqlString = ''
 
@@ -144,6 +153,16 @@ def get_trip(name):
 @app.route('/api/state/<string:state>', methods=['GET'])
 def get_state(state):
     return jsonify(getState(state))
+
+@app.route('/api/president/<string:president>', methods=['GET'])
+def get_president(president):
+    return jsonify(getPresident(president))
+
+
+
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, threaded=True)

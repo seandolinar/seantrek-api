@@ -165,4 +165,8 @@ def get_president(president):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, threaded=True)
+    # app.run(debug=True, threaded=True)
+    app.debug = True
+    app.threaded = True
+    port = int(os.environ.get('PORT',5000))
+    app.run(host='0.0.0.0', port=port)

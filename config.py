@@ -12,4 +12,7 @@ password=url.password,
 host=url.hostname,
 port=url.port
 
+print(database)
+
+
 SQLALCHEMY_DATABASE_URI = "postgresql://" + str(user) + ":" + str(password) + "@" + str(host) + ":" + str(port) + "/" + str(database)

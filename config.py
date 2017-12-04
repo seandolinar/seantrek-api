@@ -1,5 +1,6 @@
-import urlparse
 import os
+import urlparse
+
 
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 

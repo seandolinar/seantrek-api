@@ -7,9 +7,6 @@ import datetime
 import os
 
 app = Flask(__name__)
-# app.run(threaded=True)
-
-# app.json_encoder = CustomJSONEncoder
 
 app.config.from_pyfile('config.py')
 db = SQLAlchemy(app)
@@ -19,7 +16,7 @@ db = SQLAlchemy(app)
 
 results = db.engine.execute("select * from trip_main;")
 
-def getTrips(state_id = 0):
+def getTrips(state_id = 0, featured=False):
     
     dataTrips = []
 
@@ -32,6 +29,7 @@ def getTrips(state_id = 0):
 
     trips = dbConn()
     trips.sqlString = sql_state if state_id != 0 else 'select * from trip_main order by date_start;'
+    trips.sqlString = trips.sqlString if not featured else 'select * from trip_main where trip_featured = 1 order by date_start;'
     trips = trips.getQuery()
     
     photos = dbConn()
@@ -144,7 +142,11 @@ static_states = staticStates()
 
 @app.route('/api/trips', methods=['GET'])
 def get_tasks():
-    return jsonify(getTrips())
+    return jsonify(getTrips(featured=False))
+
+@app.route('/api/trips-featured', methods=['GET'])
+def get_trips_featured():
+    return jsonify(getTrips(featured=True))
 
 @app.route('/api/tripone/<string:name>', methods=['GET'])
 def get_trip(name):
@@ -167,6 +169,5 @@ def get_president(president):
 if __name__ == '__main__':
     # app.run(debug=True, threaded=True)
     app.debug = True
-    app.threaded = True
     port = int(os.environ.get('PORT',5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, threaded=True)

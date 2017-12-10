@@ -16,6 +16,30 @@ db = SQLAlchemy(app)
 
 results = db.engine.execute("select * from trip_main;")
 
+def getStateCount():
+
+    stateCount = dbConn()
+    stateCount.sqlString = "SELECT state_id, count(*) as count, \
+            case \
+            when count(*) = 1 then 'ONE' \
+            when count(*) = 2 then 'TWO' \
+            when count(*) = 3 then 'THREE' \
+            else 'FIVE' \
+            end as number, b.abbreviation AS id \
+            FROM trip_state a \
+            LEFT JOIN ref_state b \
+            ON (a.state_id = b.id) \
+            GROUP BY state_id, b.id"
+    stateCount = stateCount.getQuery()
+
+    dictOut = {}
+
+    for state in stateCount:
+        dictOut[state['id']] = {"fillKey": state['number']}
+
+    return dictOut
+
+
 def getTrips(state_id = 0, featured=False):
     
     dataTrips = []
@@ -29,11 +53,11 @@ def getTrips(state_id = 0, featured=False):
 
     trips = dbConn()
     trips.sqlString = sql_state if state_id != 0 else 'select * from trip_main order by date_start;'
-    trips.sqlString = trips.sqlString if not featured else 'select * from trip_main where trip_featured = 1 order by date_start;'
+    trips.sqlString = trips.sqlString if not featured else 'select * from trip_main where trip_featured != 0 order by trip_featured;'
     trips = trips.getQuery()
     
     photos = dbConn()
-    photos.sqlString = 'select * from trip_photos;'
+    photos.sqlString = 'select * from trip_photos where featured = 1;'
     photos = photos.getQuery()
 
     for trip in trips:
@@ -97,7 +121,6 @@ def getState(stateCode):
 
     return getTrips(state_id)
 
-
 def getPresident(number):
     presidents = dbConn()
     presidents.sqlString = ('select * from ref_presidents ' + 
@@ -105,6 +128,26 @@ def getPresident(number):
     presidents = presidents.getQuery()
 
     return presidents
+
+def getPhotoGrid():
+
+    categories = ['N', 'C', 'F', 'H']
+    arrSQL = []
+
+    for category in categories:
+        arrSQL.append("(SELECT *, RANDOM() FROM trip_photos WHERE photo_type = '" + category + "' ORDER BY RANDOM DESC LIMIT 5)")
+
+    strSQL = ('UNION').join(arrSQL)
+
+    strSQL = 'SELECT a.*, b.trip_label FROM (' + strSQL + ') a \
+            LEFT JOIN trip_main b \
+            ON (a.trip_id = b.trip_id)'
+
+    photos = dbConn()
+    photos.sqlString = strSQL
+    photos = photos.getQuery()
+
+    return photos
 
 class dbConn(object):
     sqlString = ''
@@ -156,10 +199,17 @@ def get_trip(name):
 def get_state(state):
     return jsonify(getState(state))
 
+@app.route('/api/state-count', methods=['GET'])
+def get_state_count():
+    return jsonify(getStateCount())
+
 @app.route('/api/president/<string:president>', methods=['GET'])
 def get_president(president):
     return jsonify(getPresident(president))
 
+@app.route('/api/photo-grid', methods=['GET'])
+def get_photo_grid():
+    return jsonify(getPhotoGrid())
 
 
 

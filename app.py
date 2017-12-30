@@ -57,7 +57,7 @@ def getTrips(state_id = 0, featured=False):
     trips = trips.getQuery()
     
     photos = dbConn()
-    photos.sqlString = 'select * from trip_photos where featured = 1;'
+    photos.sqlString = 'select * from trip_photos where featured != 0 order by featured;'
     photos = photos.getQuery()
 
     for trip in trips:
@@ -149,6 +149,18 @@ def getPhotoGrid():
 
     return photos
 
+def getPhoto(photo_id):
+    photo = dbConn()
+    photo.sqlString = 'select a.*, b.trip_label from trip_photos a \
+        LEFT JOIN trip_main b \
+        ON (a.trip_id = b.trip_id) \
+        where photo_id=' + str(photo_id) + ' limit 1;'
+    photo = photo.getQuery()
+
+    return photo
+
+
+
 class dbConn(object):
     sqlString = ''
 
@@ -210,6 +222,10 @@ def get_president(president):
 @app.route('/api/photo-grid', methods=['GET'])
 def get_photo_grid():
     return jsonify(getPhotoGrid())
+
+@app.route('/api/photos/<string:photo_id>', methods=['GET'])
+def get_photo(photo_id):
+    return jsonify(getPhoto(photo_id))
 
 
 

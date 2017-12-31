@@ -88,7 +88,7 @@ def getOneTrip(name):
             id = trip['trip_id']
 
     trip = dbConn()
-    trip.sqlString = 'select * from trip_main where trip_id=' + str(id) + ' order by date_start limit 1;'
+    trip.sqlString = 'select *, to_char(date_start, \'Mon FMDD, YYYY\') as date_start_display, to_char(date_end, \'Mon FMDD, YYYY\') as date_end_display from trip_main where trip_id=' + str(id) + ' order by date_start limit 1;'
     trip = trip.getQuery()
 
     states = dbConn()

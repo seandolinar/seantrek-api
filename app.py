@@ -109,6 +109,20 @@ def getOneTrip(name):
     if len(trip) > 0:
         trip[0]['presidents'] = presidents
 
+    photos = dbConn()
+    photos.sqlString = 'select * from trip_photos where featured != 0 order by featured;'
+    photos = photos.getQuery()
+
+    dataPhotos = []
+
+    for photo in photos:
+        dictPhoto = photo
+
+        if dictPhoto['trip_id'] == trip[0]['trip_id']:
+            dataPhotos.append(dictPhoto)
+
+    trip[0]['photos'] = dataPhotos
+
 
     return trip
 
@@ -158,7 +172,6 @@ def getPhoto(photo_id):
     photo = photo.getQuery()
 
     return photo
-
 
 
 class dbConn(object):

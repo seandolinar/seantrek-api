@@ -39,6 +39,7 @@ def getStateCount():
 
     return dictOut
 
+
 def getTrips(state_id = 0, featured=False):
     
     dataTrips = []
@@ -108,19 +109,6 @@ def getOneTrip(name):
     if len(trip) > 0:
         trip[0]['presidents'] = presidents
 
-    photos = dbConn()
-    photos.sqlString = 'select * from trip_photos where featured != 0 order by featured;'
-    photos = photos.getQuery()
-
-    dataPhotos = []
-
-    for photo in photos:
-        dictPhoto = photo
-
-        if dictPhoto['trip_id'] == trip[0]['trip_id']:
-            dataPhotos.append(dictPhoto)
-
-    trip[0]['photos'] = dataPhotos
 
     return trip
 
